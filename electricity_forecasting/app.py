@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import joblib
+import threading
 import numpy as np
 import pandas as pd
 from contextlib import asynccontextmanager
@@ -20,7 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
-# Set environment & paths
+# Set environment & paths (prevent matplotlib and tensorflow startup stalls)
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(BASE_DIR, "src")
@@ -215,16 +217,33 @@ def load_or_train_model():
     print("[app] Initialization completed. Ready to serve traffic.")
 
 
+init_lock = threading.Lock()
+is_initializing = False
+
+
 def ensure_initialized():
-    """Ensure model and dataset state are loaded."""
-    if state["model"] is None:
-        load_or_train_model()
+    """Ensure model and dataset state are loaded (thread-safe)."""
+    global is_initializing
+    if state["model"] is not None:
+        return
+    with init_lock:
+        if state["model"] is None:
+            is_initializing = True
+            try:
+                load_or_train_model()
+            finally:
+                is_initializing = False
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle startup and shutdown handler."""
-    ensure_initialized()
+    """
+    Lifecycle startup handler:
+    Spawns background initialization thread so Uvicorn binds to $PORT in <100ms.
+    This guarantees Render/cloud port scanners pass immediately without timing out.
+    """
+    init_thread = threading.Thread(target=ensure_initialized, name="ModelInitThread", daemon=True)
+    init_thread.start()
     yield
     print("[app] Shutting down application.")
 
@@ -248,11 +267,15 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    """Health check endpoint."""
-    ensure_initialized()
+    """
+    Health check endpoint:
+    Returns 200 OK immediately for cloud health checks and port scanners.
+    """
+    is_ready = state["model"] is not None
     return {
-        "status": "online",
-        "model_loaded": state["model"] is not None,
+        "status": "online" if is_ready else "initializing",
+        "ready": is_ready,
+        "initializing": is_initializing,
         "records_loaded": len(state["full_series"]) if state["full_series"] is not None else 0,
     }
 

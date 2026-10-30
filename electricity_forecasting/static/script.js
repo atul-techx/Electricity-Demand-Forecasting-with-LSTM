@@ -259,11 +259,16 @@ function initChart() {
 }
 
 /**
- * Fetch and display all metrics and default forecast
+ * Fetch and display all metrics and default forecast with automatic retry
  */
-async function loadAllData() {
-  await fetchMetrics();
-  await loadForecastData(currentForecastHours, currentHistoryHours);
+async function loadAllData(retries = 15) {
+  const success = await fetchMetrics();
+  if (success) {
+    await loadForecastData(currentForecastHours, currentHistoryHours);
+  } else if (retries > 0) {
+    statusText.textContent = "Pipeline Initializing (Background warm-up)...";
+    setTimeout(() => loadAllData(retries - 1), 2000);
+  }
 }
 
 /**
@@ -306,10 +311,12 @@ async function fetchMetrics() {
     // Dataset records
     kpiTotalPoints.textContent = data.total_records.toLocaleString();
     kpiSplitMeta.textContent = `${data.train_records.toLocaleString()} Train / ${data.test_records.toLocaleString()} Test`;
+    return true;
   } catch (err) {
-    console.error("Failed to load metrics:", err);
+    console.warn("Metrics still initializing:", err.message);
     statusText.textContent = "Model Initializing...";
     kpiModelStatus.textContent = "Standby";
+    return false;
   }
 }
 
