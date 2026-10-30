@@ -409,40 +409,68 @@ def inverse_scale(array: np.ndarray, scaler: MinMaxScaler) -> np.ndarray:
     return scaler.inverse_transform(array.reshape(-1, 1)).flatten()
 
 
+def extract_time_features(datetimes: pd.DatetimeIndex) -> np.ndarray:
+    """
+    Generate deterministic cyclical time features from datetime index:
+      - sin_hour, cos_hour (24-hour diurnal cycle)
+      - sin_dow, cos_dow   (7-day weekly cycle)
+    Returns: np.ndarray of shape (len(datetimes), 4)
+    """
+    hours = datetimes.hour.values
+    dows = datetimes.dayofweek.values
+
+    sin_h = np.sin(2 * np.pi * hours / 24).astype(np.float32)
+    cos_h = np.cos(2 * np.pi * hours / 24).astype(np.float32)
+    sin_d = np.sin(2 * np.pi * dows / 7).astype(np.float32)
+    cos_d = np.cos(2 * np.pi * dows / 7).astype(np.float32)
+
+    return np.column_stack([sin_h, cos_h, sin_d, cos_d])
+
+
+def build_feature_matrix(series_scaled: np.ndarray, datetimes: pd.DatetimeIndex) -> np.ndarray:
+    """
+    Combine scaled demand (column 0) with 4 cyclical time signals (columns 1-4).
+    Returns: np.ndarray of shape (N, 5)
+    """
+    time_feats = extract_time_features(datetimes)
+    return np.column_stack([series_scaled.astype(np.float32), time_feats])
+
+
 # ---------------------------------------------------------------------------
 # 6. Sliding-Window Sequence Generation
 # ---------------------------------------------------------------------------
 
 def create_sequences(
-    data: np.ndarray,
+    feature_matrix: np.ndarray,
     lookback: int = LOOKBACK,
     horizon: int = HORIZON,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Build overlapping (X, y) pairs from a 1-D scaled array.
+    Build overlapping (X, y) pairs from a 2-D multi-feature array of shape (N, 5).
 
-    Each X window has shape (lookback,) and each y is the single value
-    `horizon` steps after the end of the window.
+    Each X window has shape (lookback, 5) and each y is the scaled demand (column 0)
+    `horizon` steps ahead.
 
     Parameters
     ----------
-    data     : 1-D numpy array of scaled values.
-    lookback : number of past timesteps used as features.
-    horizon  : forecast horizon (default = 1 step ahead).
+    feature_matrix : 2-D numpy array of shape (N, 5).
+    lookback       : number of past timesteps used as features (default 24).
+    horizon        : forecast horizon (default = 1 step ahead).
 
     Returns
     -------
-    X : np.ndarray, shape (n_samples, lookback, 1)
+    X : np.ndarray, shape (n_samples, lookback, 5)
     y : np.ndarray, shape (n_samples,)
     """
+    if feature_matrix.ndim == 1:
+        feature_matrix = feature_matrix.reshape(-1, 1)
+
     X, y = [], []
-    end = len(data) - horizon
+    end = len(feature_matrix) - horizon
     for i in range(lookback, end + 1):
-        X.append(data[i - lookback : i])
-        y.append(data[i + horizon - 1])
-    X = np.array(X).reshape(-1, lookback, 1)   # LSTM: (samples, timesteps, features)
-    y = np.array(y)
-    return X, y
+        X.append(feature_matrix[i - lookback : i])
+        y.append(feature_matrix[i + horizon - 1, 0])
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
 
 
 # ---------------------------------------------------------------------------
@@ -451,7 +479,7 @@ def create_sequences(
 
 def prepare_data() -> dict:
     """
-    End-to-end data preparation convenience function called by main.py.
+    End-to-end data preparation convenience function with multi-feature engineering.
 
     Returns
     -------
@@ -459,9 +487,12 @@ def prepare_data() -> dict:
         "train_series"   - raw MW training pd.Series
         "test_series"    - raw MW test pd.Series
         "scaler"         - MinMaxScaler fitted on train only
-        "X_train"        - LSTM training sequences  (n, lookback, 1)
+        "train_features" - multi-feature array for train (n, 5)
+        "test_features"  - multi-feature array for test (m, 5)
+        "full_features"  - concatenated multi-feature array (n+m, 5)
+        "X_train"        - LSTM training sequences  (n, lookback, 5)
         "y_train"        - LSTM training targets    (n,)
-        "X_test"         - LSTM test sequences      (m, lookback, 1)
+        "X_test"         - LSTM test sequences      (m, lookback, 5)
         "y_test"         - LSTM test targets scaled (m,)
         "y_test_raw"     - test targets in original MW units (m,)
     """
@@ -473,24 +504,31 @@ def prepare_data() -> dict:
     train_scaled = scale(train_series, scaler)
     test_scaled  = scale(test_series,  scaler)
 
-    X_train, y_train = create_sequences(train_scaled)
-    X_test,  y_test  = create_sequences(test_scaled)
+    train_features = build_feature_matrix(train_scaled, train_series.index)
+    test_features  = build_feature_matrix(test_scaled, test_series.index)
+    full_features  = np.vstack([train_features, test_features])
+
+    X_train, y_train = create_sequences(train_features)
+    X_test,  y_test  = create_sequences(test_features)
 
     # Ground-truth in original MW for plots and metrics
     y_test_raw = inverse_scale(y_test, scaler)
 
     print(
-        f"[data_loader] Sequence shapes -> "
+        f"[data_loader] Multi-feature sequence shapes -> "
         f"X_train: {X_train.shape}  X_test: {X_test.shape}"
     )
 
     return {
-        "train_series": train_series,
-        "test_series":  test_series,
-        "scaler":       scaler,
-        "X_train":      X_train,
-        "y_train":      y_train,
-        "X_test":       X_test,
-        "y_test":       y_test,
-        "y_test_raw":   y_test_raw,
+        "train_series":   train_series,
+        "test_series":    test_series,
+        "scaler":         scaler,
+        "train_features": train_features,
+        "test_features":  test_features,
+        "full_features":  full_features,
+        "X_train":        X_train,
+        "y_train":        y_train,
+        "X_test":         X_test,
+        "y_test":         y_test,
+        "y_test_raw":     y_test_raw,
     }

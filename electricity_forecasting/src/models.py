@@ -58,44 +58,25 @@ class NaiveBaseline:
 
 def build_lstm(
     lookback: int = 24,
+    n_features: int = 5,
     lstm_units_1: int = 64,
     lstm_units_2: int = 32,
     dropout_rate: float = 0.20,
     learning_rate: float = 1e-3,
 ) -> keras.Sequential:
     """
-    Build and compile a two-layer stacked LSTM model.
+    Build and compile a two-layer stacked LSTM model with multi-feature input.
 
     Architecture
     ------------
-    Input  ->  LSTM(64, return_sequences=True)  ->  Dropout(0.2)
-           ->  LSTM(32, return_sequences=False) ->  Dropout(0.2)
-           ->  Dense(1)
-
-    Parameters
-    ----------
-    lookback        : number of timesteps in each input sequence.
-    lstm_units_1    : units in the first LSTM layer.
-    lstm_units_2    : units in the second LSTM layer.
-    dropout_rate    : fraction of units to drop for regularisation.
-    learning_rate   : Adam optimiser learning rate.
-
-    Returns
-    -------
-    keras.Sequential
-        Compiled model ready for training.
+    Input(lookback, n_features)  ->  LSTM(64, return_sequences=True)  ->  Dropout(0.2)
+                                 ->  LSTM(32, return_sequences=False) ->  Dropout(0.2)
+                                 ->  Dense(1)
     """
     model = keras.Sequential(
         [
-            # -- First LSTM layer ------------------------------------------
-            # return_sequences=True passes the full output sequence to
-            # the second LSTM layer.
-            layers.LSTM(
-                lstm_units_1,
-                return_sequences=True,
-                input_shape=(lookback, 1),
-                name="lstm_1",
-            ),
+            layers.Input(shape=(lookback, n_features)),
+            layers.LSTM(lstm_units_1, return_sequences=True, name="lstm_1"),
             layers.Dropout(dropout_rate, name="dropout_1"),
 
             # -- Second LSTM layer -----------------------------------------

@@ -50,6 +50,7 @@ state: Dict[str, Any] = {
     "metrics": None,
     "full_series": None,
     "full_scaled": None,
+    "full_features": None,
     "test_datetimes": None,
     "baseline_mw": None,
     "lstm_mw": None,
@@ -68,11 +69,12 @@ def load_or_train_model():
     scaler = data["scaler"]
     state["scaler"] = scaler
 
-    # Reconstruct full series for rolling window future forecasts
+    # Reconstruct full series and multi-feature array for rolling forecasts
     train_ser = data["train_series"]
     test_ser = data["test_series"]
     full_ser = pd.concat([train_ser, test_ser])
     state["full_series"] = full_ser
+    state["full_features"] = data["full_features"]
 
     train_scaled = scale(train_ser, scaler)
     test_scaled = scale(test_ser, scaler)
@@ -91,13 +93,14 @@ def load_or_train_model():
         model = None
 
     if model is None:
-        print("[app] No existing model found. Training stacked LSTM model...")
-        model = build_lstm(lookback=LOOKBACK)
+        n_features = data["X_train"].shape[2]
+        print(f"[app] No existing model found. Training multi-feature stacked LSTM (n_features={n_features})...")
+        model = build_lstm(lookback=LOOKBACK, n_features=n_features)
         train_lstm(
             model,
             data["X_train"],
             data["y_train"],
-            epochs=35,
+            epochs=25,
             batch_size=128,
         )
         print(f"[app] Saving newly trained model to {MODEL_PATH}...")
@@ -203,12 +206,14 @@ def load_or_train_model():
 
     # Pre-warm common forecast horizons for zero-latency initial page load
     print("[app] Pre-warming forecast cache for instant responses...")
+    last_dt = full_ser.index[-1]
     for h in (24, 72, 168):
         if h not in state["forecast_cache"]:
             f_mw, _ = forecast_future(
                 model=model,
-                full_series_scaled=state["full_scaled"],
+                full_features=state["full_features"],
                 scaler=scaler,
+                last_timestamp=last_dt,
                 lookback=LOOKBACK,
                 steps=h,
             )
@@ -325,8 +330,9 @@ def get_forecast(
     else:
         future_mw, _ = forecast_future(
             model=model,
-            full_series_scaled=full_scaled,
+            full_features=state["full_features"],
             scaler=scaler,
+            last_timestamp=full_series.index[-1],
             lookback=LOOKBACK,
             steps=hours,
         )

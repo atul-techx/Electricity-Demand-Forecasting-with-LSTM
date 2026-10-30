@@ -41,9 +41,10 @@ def train_and_persist():
     baseline = NaiveBaseline(lookback=LOOKBACK)
     baseline_pred_scaled = baseline.predict(X_test)
 
-    print("[train_and_save] Building and training stacked LSTM...")
-    model = build_lstm(lookback=LOOKBACK)
-    train_lstm(model, X_train, y_train, epochs=40, batch_size=128)
+    n_features = X_train.shape[2]
+    print(f"[train_and_save] Building and training multi-feature stacked LSTM (n_features={n_features})...")
+    model = build_lstm(lookback=LOOKBACK, n_features=n_features)
+    train_lstm(model, X_train, y_train, epochs=25, batch_size=128)
 
     print(f"[train_and_save] Saving model to {MODEL_PATH}...")
     model.save(MODEL_PATH)
@@ -54,11 +55,20 @@ def train_and_persist():
     baseline_mw, lstm_mw = inverse_scale_predictions(
         baseline_pred_scaled, lstm_pred_scaled, scaler
     )
+
+    # Save test cache for instant server startup
+    np.savez_compressed(
+        os.path.join(MODELS_DIR, "test_cache.npz"),
+        y_test_mw=y_test_mw,
+        baseline_mw=baseline_mw,
+        lstm_mw=lstm_mw,
+    )
+
     metrics = evaluate_all(y_test_mw, baseline_mw, lstm_mw)
 
     metrics_export = {
         "status": "online",
-        "model_type": "Stacked 2-Layer LSTM (64-32 units)",
+        "model_type": f"Stacked 2-Layer LSTM ({n_features} Features: Demand + Cyclical Diurnal/Weekly Time Signals)",
         "lookback_hours": LOOKBACK,
         "total_records": len(data["train_series"]) + len(data["test_series"]),
         "train_records": len(data["train_series"]),

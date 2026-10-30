@@ -15,6 +15,7 @@ Responsibilities:
 
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import tensorflow as tf
@@ -307,57 +308,55 @@ def print_summary_table(metrics: dict) -> None:
 
 def forecast_future(
     model,
-    full_series_scaled: np.ndarray,
+    full_features: np.ndarray,
     scaler: MinMaxScaler,
+    last_timestamp: pd.Timestamp = None,
     lookback: int = 24,
     steps: int = 168,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Iteratively forecast `steps` time steps beyond the end of the dataset
-    using a trained LSTM model.
-
-    Strategy -- Recursive / Autoregressive:
-        At each step t:
-          1. Feed the last `lookback` scaled values as the input window.
-          2. Predict one step ahead.
-          3. Append the prediction to the rolling window (drop the oldest).
-          4. Repeat for `steps` iterations.
-
-    This approach allows multi-step forecasting with a model trained on
-    single-step prediction.  Uncertainty accumulates over longer horizons
-    (which is expected and honest behaviour).
-
-    Parameters
-    ----------
-    model               : Trained Keras LSTM model (predict 1 step from lookback inputs).
-    full_series_scaled  : Complete scaled series (train + test concatenated) as 1-D array.
-                          The last `lookback` values seed the forecast.
-    scaler              : MinMaxScaler fitted on training data (for inverse transform).
-    lookback            : Number of past timesteps used as input window (default 24).
-    steps               : Number of future timesteps to forecast (default 168 = 7 days).
-
-    Returns
-    -------
-    future_preds_mw : np.ndarray, shape (steps,)
-        Future demand predictions in original MW units.
-    future_preds_scaled : np.ndarray, shape (steps,)
-        Future demand predictions in scaled [0, 1] domain.
+    Autoregressively forecast `steps` time steps beyond the end of the dataset
+    using a multi-feature LSTM with exact future calendar signals (diurnal wave preservation).
     """
-    print(f"\n[evaluate] Running future forecast: {steps} steps ({steps // 24} days) ahead ...")
+    print(f"\n[evaluate] Running multi-feature future forecast: {steps} steps ({steps // 24} days) ahead ...")
 
-    # Seed the rolling window with the last `lookback` known values
-    window = list(full_series_scaled[-lookback:])
+    if last_timestamp is None:
+        last_timestamp = pd.Timestamp("2024-04-30 23:00:00")
+
+    future_dts = pd.date_range(
+        start=last_timestamp + pd.Timedelta(hours=1),
+        periods=steps,
+        freq="h",
+    )
+
+    # Multi-feature input check (5 features: demand, sin_h, cos_h, sin_d, cos_d)
+    if full_features.ndim == 1:
+        hours = np.zeros(len(full_features), dtype=np.float32)
+        full_features = np.column_stack([
+            full_features.astype(np.float32),
+            hours, hours, hours, hours,
+        ])
+
+    window = [list(row) for row in full_features[-lookback:]]
 
     future_preds_scaled = []
     for step in range(steps):
-        x_input = tf.constant(window[-lookback:], shape=(1, lookback, 1), dtype=tf.float32)
+        x_input = tf.constant(window[-lookback:], shape=(1, lookback, 5), dtype=tf.float32)
         # Fast compiled graph execution
         pred = float(_predict_step(model, x_input).numpy()[0, 0])
         future_preds_scaled.append(pred)
-        window.append(pred)   # roll the window forward
 
-    future_preds_scaled = np.array(future_preds_scaled)
-    future_preds_mw     = scaler.inverse_transform(
+        # Inject exact future deterministic time signals for the next hour
+        cur_dt = future_dts[step]
+        sin_h = float(np.sin(2 * np.pi * cur_dt.hour / 24))
+        cos_h = float(np.cos(2 * np.pi * cur_dt.hour / 24))
+        sin_d = float(np.sin(2 * np.pi * cur_dt.dayofweek / 7))
+        cos_d = float(np.cos(2 * np.pi * cur_dt.dayofweek / 7))
+
+        window.append([pred, sin_h, cos_h, sin_d, cos_d])
+
+    future_preds_scaled = np.array(future_preds_scaled, dtype=np.float32)
+    future_preds_mw = scaler.inverse_transform(
         future_preds_scaled.reshape(-1, 1)
     ).flatten()
 
