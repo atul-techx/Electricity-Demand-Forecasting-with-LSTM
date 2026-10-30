@@ -41,7 +41,8 @@ HORIZON     = 1         # steps ahead to forecast
 
 # Preferred local files, checked in order
 _PREFERRED_FILES = [
-    "hourlyLoadDataIndia.xlsx",   # Indian national demand (primary target)
+    "hourlyLoadDataIndia.csv",    # Pre-exported CSV for blazing fast loading (<0.1s)
+    "hourlyLoadDataIndia.xlsx",   # Indian national demand Excel (fallback)
     "electricity.csv",            # AEP / generic MW CSV (secondary)
 ]
 

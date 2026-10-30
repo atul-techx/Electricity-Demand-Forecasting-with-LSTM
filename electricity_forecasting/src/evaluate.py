@@ -17,8 +17,15 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import tensorflow as tf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
+
+
+@tf.function(reduce_retracing=True)
+def _predict_step(model, x_tensor):
+    """Pre-compiled graph step for ultra-fast multi-step recurrent forecasting."""
+    return model(x_tensor, training=False)
 
 
 # ---------------------------------------------------------------------------
@@ -343,9 +350,9 @@ def forecast_future(
 
     future_preds_scaled = []
     for step in range(steps):
-        x_input = np.array(window[-lookback:]).reshape(1, lookback, 1)
-        # Use model.__call__ directly: ~10x faster than model.predict() per step
-        pred = float(model(x_input, training=False).numpy()[0, 0])
+        x_input = tf.constant(window[-lookback:], shape=(1, lookback, 1), dtype=tf.float32)
+        # Fast compiled graph execution
+        pred = float(_predict_step(model, x_input).numpy()[0, 0])
         future_preds_scaled.append(pred)
         window.append(pred)   # roll the window forward
 

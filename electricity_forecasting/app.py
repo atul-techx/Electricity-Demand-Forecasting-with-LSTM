@@ -38,6 +38,7 @@ from evaluate import inverse_scale_predictions, evaluate_all, forecast_future
 MODEL_PATH = os.path.join(MODELS_DIR, "saved_lstm_model.keras")
 SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")
 METRICS_PATH = os.path.join(MODELS_DIR, "metrics.json")
+TEST_CACHE_PATH = os.path.join(MODELS_DIR, "test_cache.npz")
 
 # In-memory application state
 state: Dict[str, Any] = {
@@ -103,20 +104,43 @@ def load_or_train_model():
 
     state["model"] = model
 
-    # Evaluate test set predictions
-    print("[app] Generating test-set baseline and LSTM predictions...")
-    X_test = data["X_test"]
+    # Evaluate test set predictions (fast-path: load cached predictions)
     y_test_mw = data["y_test_raw"]
     state["y_test_mw"] = y_test_mw
     state["test_datetimes"] = test_ser.index[LOOKBACK : LOOKBACK + len(y_test_mw)]
 
-    baseline = NaiveBaseline(lookback=LOOKBACK)
-    baseline_pred_scaled = baseline.predict(X_test)
-    lstm_pred_scaled = model.predict(X_test, verbose=0).flatten()
+    cached_test = None
+    if os.path.exists(TEST_CACHE_PATH):
+        try:
+            npz = np.load(TEST_CACHE_PATH)
+            baseline_mw = npz["baseline_mw"]
+            lstm_mw = npz["lstm_mw"]
+            cached_test = True
+            print(f"[app] Loaded pre-calculated test predictions from {TEST_CACHE_PATH}.")
+        except Exception as e:
+            print(f"[app] Could not read test cache: {e}")
+            cached_test = False
 
-    baseline_mw, lstm_mw = inverse_scale_predictions(
-        baseline_pred_scaled, lstm_pred_scaled, scaler
-    )
+    if not cached_test:
+        print("[app] Generating test-set baseline and LSTM predictions...")
+        X_test = data["X_test"]
+        baseline = NaiveBaseline(lookback=LOOKBACK)
+        baseline_pred_scaled = baseline.predict(X_test)
+        lstm_pred_scaled = model.predict(X_test, verbose=0).flatten()
+
+        baseline_mw, lstm_mw = inverse_scale_predictions(
+            baseline_pred_scaled, lstm_pred_scaled, scaler
+        )
+        try:
+            np.savez_compressed(
+                TEST_CACHE_PATH,
+                y_test_mw=y_test_mw,
+                baseline_mw=baseline_mw,
+                lstm_mw=lstm_mw,
+            )
+        except Exception:
+            pass
+
     state["baseline_mw"] = baseline_mw
     state["lstm_mw"] = lstm_mw
 
@@ -174,6 +198,20 @@ def load_or_train_model():
             json.dump(metrics, f, indent=2)
 
     state["metrics"] = metrics
+
+    # Pre-warm common forecast horizons for zero-latency initial page load
+    print("[app] Pre-warming forecast cache for instant responses...")
+    for h in (24, 72, 168):
+        if h not in state["forecast_cache"]:
+            f_mw, _ = forecast_future(
+                model=model,
+                full_series_scaled=state["full_scaled"],
+                scaler=scaler,
+                lookback=LOOKBACK,
+                steps=h,
+            )
+            state["forecast_cache"][h] = f_mw
+
     print("[app] Initialization completed. Ready to serve traffic.")
 
 
