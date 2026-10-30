@@ -134,6 +134,9 @@ function initChart() {
   gradFuture.addColorStop(0, "rgba(250, 204, 21, 0.25)");
   gradFuture.addColorStop(1, "rgba(250, 204, 21, 0.0)");
 
+  const isMobile = window.innerWidth < 640;
+  const isSmallMobile = window.innerWidth < 480;
+
   chartInstance = new Chart(ctx, {
     type: "line",
     data: {
@@ -144,7 +147,7 @@ function initChart() {
           data: [],
           borderColor: "#38bdf8",
           backgroundColor: gradActual,
-          borderWidth: 2,
+          borderWidth: isMobile ? 1.8 : 2,
           pointRadius: 0,
           pointHoverRadius: 6,
           pointHoverBackgroundColor: "#38bdf8",
@@ -158,7 +161,7 @@ function initChart() {
           data: [],
           borderColor: "#a855f7",
           backgroundColor: "transparent",
-          borderWidth: 1.8,
+          borderWidth: isMobile ? 1.6 : 1.8,
           borderDash: [4, 4],
           pointRadius: 0,
           pointHoverRadius: 5,
@@ -184,7 +187,7 @@ function initChart() {
           data: [],
           borderColor: "#facc15",
           backgroundColor: gradFuture,
-          borderWidth: 2.5,
+          borderWidth: isMobile ? 2.2 : 2.5,
           pointRadius: 0,
           pointHoverRadius: 6,
           pointHoverBackgroundColor: "#facc15",
@@ -207,16 +210,16 @@ function initChart() {
           display: false, // controlled via custom UI chips
         },
         tooltip: {
-          backgroundColor: "rgba(15, 20, 32, 0.92)",
+          backgroundColor: "rgba(15, 20, 32, 0.94)",
           titleColor: "#ffffff",
-          titleFont: { family: "Outfit", size: 13, weight: "bold" },
+          titleFont: { family: "Outfit", size: isMobile ? 11 : 13, weight: "bold" },
           bodyColor: "#94a3b8",
-          bodyFont: { family: "JetBrains Mono", size: 12 },
+          bodyFont: { family: "JetBrains Mono", size: isMobile ? 10 : 12 },
           borderColor: "rgba(255, 255, 255, 0.12)",
           borderWidth: 1,
-          padding: 12,
+          padding: isMobile ? 8 : 12,
           cornerRadius: 8,
-          boxPadding: 6,
+          boxPadding: 4,
           callbacks: {
             label: function (context) {
               const val = context.parsed.y;
@@ -234,10 +237,19 @@ function initChart() {
           },
           ticks: {
             color: "#64748b",
-            font: { family: "JetBrains Mono", size: 10 },
+            font: { family: "JetBrains Mono", size: isMobile ? 9 : 10 },
             maxRotation: 0,
             autoSkip: true,
-            maxTicksLimit: 10,
+            maxTicksLimit: isSmallMobile ? 4 : (isMobile ? 6 : 10),
+            callback: function (val, index) {
+              const raw = this.getLabelForValue(val);
+              if (!raw || typeof raw !== "string") return raw;
+              // Clean mobile format: "04-28 16h" instead of "2024-04-28 16:00"
+              if (window.innerWidth < 640 && raw.length >= 16) {
+                return raw.slice(5, 10) + " " + raw.slice(11, 13) + "h";
+              }
+              return raw;
+            },
           },
         },
         y: {
@@ -247,7 +259,7 @@ function initChart() {
           },
           ticks: {
             color: "#64748b",
-            font: { family: "JetBrains Mono", size: 11 },
+            font: { family: "JetBrains Mono", size: isMobile ? 9 : 11 },
             callback: function (value) {
               return (value / 1000).toFixed(0) + "k MW";
             },
@@ -255,6 +267,25 @@ function initChart() {
         },
       },
     },
+  });
+
+  // Responsive resize handler for Chart.js
+  let resizeTimeout;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (!chartInstance) return;
+      const w = window.innerWidth;
+      const small = w < 480;
+      const mobile = w < 640;
+      chartInstance.options.scales.x.ticks.maxTicksLimit = small ? 4 : (mobile ? 6 : 10);
+      chartInstance.options.scales.x.ticks.font.size = mobile ? 9 : 10;
+      chartInstance.options.scales.y.ticks.font.size = mobile ? 9 : 11;
+      chartInstance.options.plugins.tooltip.titleFont.size = mobile ? 11 : 13;
+      chartInstance.options.plugins.tooltip.bodyFont.size = mobile ? 10 : 12;
+      chartInstance.options.plugins.tooltip.padding = mobile ? 8 : 12;
+      chartInstance.update("none");
+    }, 150);
   });
 }
 
