@@ -1,0 +1,28 @@
+{
+  "status": "online",
+  "model_type": "Stacked 2-Layer LSTM (64-32 units)",
+  "lookback_hours": 24,
+  "total_records": 46728,
+  "train_records": 37382,
+  "test_records": 9346,
+  "baseline": {
+    "name": "Naive Persistence Baseline",
+    "mae": 4085.7859128942287,
+    "rmse": 5232.819035733412
+  },
+  "lstm": {
+    "name": "Stacked LSTM (2-Layer)",
+    "mae": 2158.883242866338,
+    "rmse": 2827.2575541851143
+  },
+  "improvements": {
+    "mae_percentage": 47.2,
+    "rmse_percentage": 46.0
+  },
+  "dataset": {
+    "start_date": "2019-01-01 00:00:00",
+    "end_date": "2024-04-30 23:00:00",
+    "target_column": "Electricity Demand",
+    "unit": "MW"
+  }
+}

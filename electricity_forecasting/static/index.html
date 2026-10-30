@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDF-LSTM | Electricity Demand Forecasting & Grid Analytics Dashboard</title>
+  <meta name="description" content="Production-ready AI dashboard for deep learning electricity demand forecasting using Stacked LSTM neural networks and baseline benchmarking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Chart.js and date-fns adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-background">
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-box">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-wrap">
+            <h1 class="brand-title">EDF-LSTM</h1>
+            <span class="badge-version">v2.4 PROD</span>
+            <span class="status-pill" id="system-status-pill">
+              <span class="status-dot"></span>
+              <span id="status-text">Connecting...</span>
+            </span>
+          </div>
+          <p class="brand-subtitle">Deep Learning Electricity Demand Forecasting & National Grid Analytics</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="dataset-tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span id="header-dataset-label">National Grid Data</span>
+        </div>
+        <button id="btn-refresh" class="btn btn-glass" title="Refresh Live Inference Data">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>Refresh Data</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Metric Cards Grid -->
+    <section class="metrics-grid">
+      <!-- Card 1: Model Status -->
+      <div class="metric-card glass-panel" id="card-status">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">Model Status</span>
+          <span class="icon-wrap icon-pulse">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value" id="kpi-model-status">Active</div>
+          <div class="card-meta">
+            <span class="badge-tag">Stacked LSTM (2-Layer)</span>
+            <span class="text-subtle">Lookback: 24h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: LSTM MAE -->
+      <div class="metric-card glass-panel" id="card-mae">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">LSTM MAE</span>
+          <span class="icon-wrap icon-cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value highlight-cyan" id="kpi-lstm-mae">-- MW</div>
+          <div class="card-meta">
+            <span class="badge-pill badge-success" id="kpi-mae-improvement">--% vs Baseline</span>
+            <span class="text-subtle">Mean Absolute Error</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: LSTM RMSE -->
+      <div class="metric-card glass-panel" id="card-rmse">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">LSTM RMSE</span>
+          <span class="icon-wrap icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value highlight-purple" id="kpi-lstm-rmse">-- MW</div>
+          <div class="card-meta">
+            <span class="badge-pill badge-success" id="kpi-rmse-improvement">--% vs Baseline</span>
+            <span class="text-subtle">Root Mean Squared Error</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Baseline Benchmark -->
+      <div class="metric-card glass-panel" id="card-baseline">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">Persistence Baseline</span>
+          <span class="icon-wrap icon-amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value highlight-amber" id="kpi-baseline-mae">-- MW</div>
+          <div class="card-meta">
+            <span class="badge-tag">Naive Benchmark (y_t-1)</span>
+            <span class="text-subtle" id="kpi-baseline-rmse">RMSE: -- MW</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Total Sequence Points -->
+      <div class="metric-card glass-panel" id="card-records">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">Dataset Sequences</span>
+          <span class="icon-wrap icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value" id="kpi-total-points">--</div>
+          <div class="card-meta">
+            <span class="badge-tag">80% Train / 20% Test</span>
+            <span class="text-subtle" id="kpi-split-meta">Chronological Split</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6: Future Forecast Peak -->
+      <div class="metric-card glass-panel" id="card-future-peak">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="card-title">Projected Peak Load</span>
+          <span class="icon-wrap icon-gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="card-value highlight-gold" id="kpi-forecast-peak">-- MW</div>
+          <div class="card-meta">
+            <span class="badge-tag" id="kpi-forecast-range">Min: -- MW</span>
+            <span class="text-subtle" id="kpi-forecast-span">Next 7 Days</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Control Toolbar -->
+    <section class="toolbar-panel glass-panel">
+      <div class="toolbar-left">
+        <div class="control-group">
+          <label class="control-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Future Forecast Horizon:
+          </label>
+          <div class="btn-group" id="horizon-pills">
+            <button class="pill-btn" data-hours="24">24h (1 Day)</button>
+            <button class="pill-btn" data-hours="48">48h (2 Days)</button>
+            <button class="pill-btn" data-hours="72">72h (3 Days)</button>
+            <button class="pill-btn active" data-hours="168">168h (7 Days)</button>
+          </div>
+        </div>
+
+        <div class="control-group slider-group">
+          <div class="slider-header">
+            <label for="hours-slider" class="control-label">Fine Adjust Horizon:</label>
+            <span class="slider-value-badge" id="slider-value-display">168 Hours</span>
+          </div>
+          <input type="range" id="hours-slider" min="12" max="336" step="12" value="168" class="custom-slider">
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="control-group">
+          <label for="history-select" class="control-label">History Context:</label>
+          <select id="history-select" class="custom-select">
+            <option value="48">Last 48 Hours (2 Days)</option>
+            <option value="72">Last 72 Hours (3 Days)</option>
+            <option value="168" selected>Last 168 Hours (1 Week)</option>
+            <option value="336">Last 336 Hours (2 Weeks)</option>
+          </select>
+        </div>
+
+        <button id="btn-simulate" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span id="simulate-text">Simulate Forecast</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Chart Section -->
+    <section class="chart-section glass-panel">
+      <div class="chart-header">
+        <div class="chart-title-area">
+          <h2 class="chart-heading">Grid Demand Timeline & Multi-Step Horizon Forecast</h2>
+          <p class="chart-description" id="chart-subtext">
+            Displaying historical actual load, persistence baseline, LSTM test predictions, and out-of-sample future projections.
+          </p>
+        </div>
+
+        <!-- Custom Series Toggle Chips -->
+        <div class="series-toggles">
+          <button class="toggle-chip active" data-series="actual" id="toggle-actual">
+            <span class="chip-color chip-actual"></span>
+            <span>Historical Actual</span>
+          </button>
+          <button class="toggle-chip active" data-series="lstm" id="toggle-lstm">
+            <span class="chip-color chip-lstm"></span>
+            <span>LSTM Test Prediction</span>
+          </button>
+          <button class="toggle-chip active" data-series="baseline" id="toggle-baseline">
+            <span class="chip-color chip-baseline"></span>
+            <span>Naive Baseline</span>
+          </button>
+          <button class="toggle-chip active" data-series="future" id="toggle-future">
+            <span class="chip-color chip-future"></span>
+            <span>Future Out-of-Sample</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Chart Canvas Wrapper -->
+      <div class="chart-canvas-container">
+        <div class="chart-loading-overlay" id="chart-loader">
+          <div class="spinner"></div>
+          <p>Running autoregressive multi-step neural inference...</p>
+        </div>
+        <canvas id="demandChart"></canvas>
+      </div>
+
+      <!-- Chart Footer Legend / Info Bar -->
+      <div class="chart-footer-bar">
+        <div class="footer-stat">
+          <span class="f-label">Historical Boundary:</span>
+          <span class="f-value" id="stat-boundary">--</span>
+        </div>
+        <div class="footer-stat">
+          <span class="f-label">Forecast Start:</span>
+          <span class="f-value highlight-cyan" id="stat-start">--</span>
+        </div>
+        <div class="footer-stat">
+          <span class="f-label">Forecast Horizon End:</span>
+          <span class="f-value highlight-gold" id="stat-end">--</span>
+        </div>
+        <div class="footer-stat">
+          <span class="f-label">Projected Mean Load:</span>
+          <span class="f-value" id="stat-mean">-- MW</span>
+        </div>
+        <div class="footer-stat">
+          <span class="f-label">Projected Peak Load:</span>
+          <span class="f-value highlight-gold" id="stat-peak">-- MW</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deep Analytics & Forecast Breakdown -->
+    <section class="analytics-grid">
+      <!-- 7-Day Day-by-Day Forecast Breakdown -->
+      <div class="analytics-card glass-panel">
+        <div class="card-header">
+          <h3 class="card-heading">Horizon Daily Breakdown</h3>
+          <span class="badge-tag">Autoregressive Extrapolation</span>
+        </div>
+        <div class="table-responsive">
+          <table class="custom-table" id="forecast-breakdown-table">
+            <thead>
+              <tr>
+                <th>Day Horizon</th>
+                <th>Date</th>
+                <th>Peak Load (MW)</th>
+                <th>Valley Load (MW)</th>
+                <th>Avg Load (MW)</th>
+                <th>Diurnal Swing</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-tbody">
+              <tr>
+                <td colspan="6" class="text-center">Loading forecast points...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Model Specs & Pipeline Architecture -->
+      <div class="analytics-card glass-panel">
+        <div class="card-header">
+          <h3 class="card-heading">Model Architecture & Training Parameters</h3>
+          <span class="badge-pill badge-success">Production Grade</span>
+        </div>
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-label">Architecture</span>
+            <span class="spec-value">Stacked 2-Layer LSTM</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Layer Units</span>
+            <span class="spec-value">LSTM(64) &rarr; LSTM(32) &rarr; Dense(1)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Input Lookback</span>
+            <span class="spec-value">24 Hourly Timesteps (1 Day)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Regularization</span>
+            <span class="spec-value">Dropout (0.20) + EarlyStopping</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Optimizer & Loss</span>
+            <span class="spec-value">Adam (lr=1e-3) + MSE Loss</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Data Partitioning</span>
+            <span class="spec-value">Strict 80/20 Chronological Split</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Leakage Prevention</span>
+            <span class="spec-value">MinMaxScaler fit on Train only</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Out-of-Sample Strategy</span>
+            <span class="spec-value">Recursive Rolling Seed Extrapolation</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>EDF-LSTM Framework &bull; Production Forecasting Web Application</span>
+      </div>
+      <div class="footer-right">
+        <span class="api-status-badge">
+          <span class="dot-online"></span>
+          FastAPI Backend &bull; Latency: <span id="latency-val">~35ms</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
