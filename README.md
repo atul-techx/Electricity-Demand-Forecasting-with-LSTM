@@ -1,3 +1,13 @@
+---
+title: Electricity Demand Forecasting LSTM
+emoji: ⚡
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # EDF-LSTM — Electricity Demand Forecasting with LSTM, Baseline Comparison & Web Dashboard
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
