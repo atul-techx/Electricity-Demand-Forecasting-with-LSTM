@@ -120,19 +120,19 @@ function initEventListeners() {
 }
 
 /**
- * Initialize Chart.js with dark-themed styling and multi-dataset configuration
+ * Initialize Chart.js with clean light enterprise styling and multi-dataset configuration
  */
 function initChart() {
   const ctx = document.getElementById("demandChart").getContext("2d");
 
-  // Create Gradients
+  // Create Gradients for Professional White Theme
   const gradActual = ctx.createLinearGradient(0, 0, 0, 400);
-  gradActual.addColorStop(0, "rgba(56, 189, 248, 0.22)");
-  gradActual.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+  gradActual.addColorStop(0, "rgba(2, 132, 199, 0.16)");
+  gradActual.addColorStop(1, "rgba(2, 132, 199, 0.0)");
 
   const gradFuture = ctx.createLinearGradient(0, 0, 0, 400);
-  gradFuture.addColorStop(0, "rgba(250, 204, 21, 0.25)");
-  gradFuture.addColorStop(1, "rgba(250, 204, 21, 0.0)");
+  gradFuture.addColorStop(0, "rgba(217, 119, 6, 0.18)");
+  gradFuture.addColorStop(1, "rgba(217, 119, 6, 0.0)");
 
   const isMobile = window.innerWidth < 640;
   const isSmallMobile = window.innerWidth < 480;
@@ -145,12 +145,12 @@ function initChart() {
         {
           label: "Historical Actual Demand",
           data: [],
-          borderColor: "#38bdf8",
+          borderColor: "#0284c7",
           backgroundColor: gradActual,
           borderWidth: isMobile ? 1.8 : 2,
           pointRadius: 0,
           pointHoverRadius: 6,
-          pointHoverBackgroundColor: "#38bdf8",
+          pointHoverBackgroundColor: "#0284c7",
           pointHoverBorderColor: "#ffffff",
           pointHoverBorderWidth: 2,
           fill: true,
@@ -159,38 +159,38 @@ function initChart() {
         {
           label: "LSTM Test Prediction",
           data: [],
-          borderColor: "#a855f7",
+          borderColor: "#7c3aed",
           backgroundColor: "transparent",
           borderWidth: isMobile ? 1.6 : 1.8,
           borderDash: [4, 4],
           pointRadius: 0,
           pointHoverRadius: 5,
-          pointHoverBackgroundColor: "#a855f7",
+          pointHoverBackgroundColor: "#7c3aed",
           fill: false,
           tension: 0.25,
         },
         {
           label: "Naive Baseline Benchmark",
           data: [],
-          borderColor: "#fb923c",
+          borderColor: "#ea580c",
           backgroundColor: "transparent",
           borderWidth: 1.2,
           borderDash: [2, 2],
           pointRadius: 0,
           pointHoverRadius: 4,
-          pointHoverBackgroundColor: "#fb923c",
+          pointHoverBackgroundColor: "#ea580c",
           fill: false,
           tension: 0.2,
         },
         {
           label: "Future Out-of-Sample Forecast",
           data: [],
-          borderColor: "#facc15",
+          borderColor: "#d97706",
           backgroundColor: gradFuture,
           borderWidth: isMobile ? 2.2 : 2.5,
           pointRadius: 0,
           pointHoverRadius: 6,
-          pointHoverBackgroundColor: "#facc15",
+          pointHoverBackgroundColor: "#d97706",
           pointHoverBorderColor: "#ffffff",
           pointHoverBorderWidth: 2,
           fill: true,
@@ -210,12 +210,12 @@ function initChart() {
           display: false, // controlled via custom UI chips
         },
         tooltip: {
-          backgroundColor: "rgba(15, 20, 32, 0.94)",
+          backgroundColor: "rgba(15, 23, 42, 0.94)",
           titleColor: "#ffffff",
           titleFont: { family: "Outfit", size: isMobile ? 11 : 13, weight: "bold" },
-          bodyColor: "#94a3b8",
+          bodyColor: "#cbd5e1",
           bodyFont: { family: "JetBrains Mono", size: isMobile ? 10 : 12 },
-          borderColor: "rgba(255, 255, 255, 0.12)",
+          borderColor: "rgba(255, 255, 255, 0.15)",
           borderWidth: 1,
           padding: isMobile ? 8 : 12,
           cornerRadius: 8,
@@ -232,7 +232,7 @@ function initChart() {
       scales: {
         x: {
           grid: {
-            color: "rgba(255, 255, 255, 0.05)",
+            color: "rgba(0, 0, 0, 0.05)",
             drawBorder: false,
           },
           ticks: {
@@ -254,7 +254,7 @@ function initChart() {
         },
         y: {
           grid: {
-            color: "rgba(255, 255, 255, 0.05)",
+            color: "rgba(0, 0, 0, 0.05)",
             drawBorder: false,
           },
           ticks: {

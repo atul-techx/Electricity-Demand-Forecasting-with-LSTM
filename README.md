@@ -21,7 +21,7 @@ A production-ready deep learning framework for **Electricity Demand Forecasting*
 - **Out-of-Sample Future Projections**: Autoregressive recursive rolling window extrapolation predicting 24h to 168h (7 days) beyond the latest available timestamp.
 - **Full-Stack Web Application**:
   - **FastAPI backend** with CORS and REST API endpoints (`/api/metrics`, `/api/forecast`, `/api/health`).
-  - **Interactive Dark-Themed Glassmorphism UI** with real-time KPI cards, forecast horizon selector, and smooth Chart.js visualization.
+  - **Modern Clean Enterprise Light/White UI** with real-time KPI cards, forecast horizon selector, and smooth Chart.js visualization.
 
 ---
 
