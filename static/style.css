@@ -113,6 +113,7 @@ body {
 /* Layout Container */
 .app-container {
   max-width: 1480px;
+  width: 100%;
   margin: 0 auto;
   padding: 24px 32px 48px;
   display: flex;
@@ -162,6 +163,7 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -174,6 +176,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .brand-title {
@@ -184,6 +187,7 @@ body {
   background: linear-gradient(135deg, #ffffff 30%, var(--cyan-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  white-space: nowrap;
 }
 
 .badge-version {
@@ -300,7 +304,7 @@ body {
 /* Metric Cards Grid */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
 }
 
@@ -720,14 +724,57 @@ body {
   font-weight: 700;
 }
 
+/* Table card header layout & scroll hint badge */
+.table-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.card-header-titles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scroll-hint-pill {
+  display: none;
+}
+
 /* Custom Table */
 .table-responsive {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 14px;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.3) rgba(0, 0, 0, 0.2);
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
 }
 
 .custom-table {
   width: 100%;
+  min-width: 540px;
   border-collapse: collapse;
   font-size: 0.84rem;
 }
@@ -741,6 +788,7 @@ body {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .custom-table td {
@@ -748,6 +796,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .custom-table tr:hover td {
@@ -822,34 +871,464 @@ body {
   box-shadow: 0 0 6px var(--green-accent);
 }
 
-/* Responsive Breakpoints */
-@media (max-width: 1024px) {
-  .analytics-grid {
-    grid-template-columns: 1fr;
+/* ==========================================================================
+   Responsive Breakpoints & Mobile Optimization
+   ========================================================================== */
+
+/* Medium Laptops & Desktops (<= 1400px) */
+@media (max-width: 1400px) {
+  .app-container {
+    padding: 20px 24px 40px;
+    gap: 20px;
+  }
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .chart-canvas-container {
+    height: 420px;
   }
 }
 
+/* Tablets (<= 992px) */
+@media (max-width: 992px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .chart-canvas-container {
+    height: 380px;
+  }
+  .toolbar-panel {
+    padding: 16px 20px;
+  }
+}
+
+/* Mobile & Small Tablets (<= 768px) */
 @media (max-width: 768px) {
   .app-container {
-    padding: 16px;
-  }
-  .app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 14px 14px 32px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
     gap: 14px;
   }
+
+  /* Header mobile adjustments */
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 10px 0;
+  }
+
+  .header-brand {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .logo-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+
+  .logo-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .brand-title-wrap {
+    gap: 8px;
+    row-gap: 6px;
+  }
+
+  .brand-title {
+    font-size: 1.45rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    margin-top: 4px;
+  }
+
+  .header-actions {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .dataset-tag {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  #btn-refresh {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  /* 2-Column KPI Cards Layout on Mobile */
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .metric-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .card-header {
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .icon-wrap svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .card-value {
+    font-size: 1.35rem;
+  }
+
+  .card-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 0.72rem;
+  }
+
+  .badge-tag, .badge-pill {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .text-subtle {
+    font-size: 0.7rem;
+  }
+
+  /* Toolbar panel */
   .toolbar-panel {
     flex-direction: column;
     align-items: stretch;
+    padding: 14px 14px;
+    gap: 14px;
+    border-radius: 12px;
   }
+
   .toolbar-left, .toolbar-right {
     flex-direction: column;
     align-items: stretch;
+    gap: 14px;
+    width: 100%;
   }
+
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .control-label {
+    font-size: 0.78rem;
+    justify-content: flex-start;
+  }
+
+  .btn-group#horizon-pills {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    width: 100%;
+  }
+
+  .pill-btn {
+    padding: 8px 6px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .slider-group {
+    width: 100%;
+  }
+
+  .slider-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .custom-slider {
+    width: 100%;
+    height: 6px;
+  }
+
+  .custom-slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .custom-select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+
+  #btn-simulate {
+    width: 100%;
+    padding: 11px;
+    justify-content: center;
+    font-size: 0.88rem;
+  }
+
+  /* Main Chart Section */
+  .chart-section {
+    padding: 16px 14px;
+    border-radius: 12px;
+  }
+
+  .chart-heading {
+    font-size: 1.1rem;
+  }
+
+  .chart-description {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .series-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .toggle-chip {
+    padding: 8px 8px;
+    font-size: 0.74rem;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
   .chart-canvas-container {
-    height: 360px;
+    height: 310px;
   }
+
+  .chart-footer-bar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .footer-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .footer-stat:last-child {
+    grid-column: span 2;
+  }
+
+  .f-label {
+    font-size: 0.68rem;
+  }
+
+  .f-value {
+    font-size: 0.82rem;
+  }
+
+  /* Deep Analytics */
+  .analytics-card {
+    padding: 16px 14px;
+    border-radius: 12px;
+  }
+
+  .card-heading {
+    font-size: 1rem;
+  }
+
+  .scroll-hint-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--cyan-accent);
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 2px 8px;
+    border-radius: 12px;
+    animation: nudge 2s infinite ease-in-out;
+  }
+
   .specs-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .spec-item {
+    padding: 8px 12px;
+  }
+
+  .spec-label {
+    font-size: 0.7rem;
+  }
+
+  .spec-value {
+    font-size: 0.78rem;
+  }
+
+  /* Sticky first column in table */
+  .custom-table th:first-child,
+  .custom-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: #0d1222;
+    z-index: 2;
+  }
+
+  .custom-table th:first-child {
+    background: #12182c;
+    z-index: 3;
+  }
+
+  .custom-table th:first-child::after,
+  .custom-table td:first-child::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Footer */
+  .app-footer {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+    font-size: 0.76rem;
+  }
+
+  .api-status-badge {
+    justify-content: center;
+    font-size: 0.74rem;
+  }
+}
+
+/* Small Smart Phones (<= 480px) */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 10px 10px 24px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    gap: 12px;
+  }
+
+  .brand-title {
+    font-size: 1.35rem;
+  }
+
+  .badge-version {
+    font-size: 0.66rem;
+    padding: 2px 6px;
+  }
+
+  .status-pill {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+
+  .metrics-grid {
+    gap: 8px;
+  }
+
+  .metric-card {
+    padding: 12px 10px;
+  }
+
+  .card-value {
+    font-size: 1.18rem;
+  }
+
+  .chart-canvas-container {
+    height: 270px;
+  }
+
+  .pill-btn {
+    padding: 7px 4px;
+    font-size: 0.75rem;
+  }
+
+  .toggle-chip {
+    padding: 6px 6px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra Small Phones (<= 340px) */
+@media (max-width: 340px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .series-toggles {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-group#horizon-pills {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-footer-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-stat:last-child {
+    grid-column: span 1;
+  }
+}
+
+/* Swipe Nudge Animation */
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .btn, .pill-btn, .toggle-chip, .custom-select {
+    min-height: 40px;
+  }
+  .btn:active, .pill-btn:active, .toggle-chip:active {
+    transform: scale(0.97);
+  }
+  .metric-card:hover {
+    transform: none;
   }
 }

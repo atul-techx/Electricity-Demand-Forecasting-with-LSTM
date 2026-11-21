@@ -21,11 +21,13 @@ import os
 import sys
 import numpy as np
 
-# -- Suppress verbose TensorFlow logs (keep warnings & errors) ---------------
+# -- Suppress verbose TensorFlow logs & configure safe Keras cache -----------
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.environ.setdefault("KERAS_HOME", os.path.join(BASE_DIR, ".keras"))
 
 # Allow running from the project root without installing the package
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(BASE_DIR, "src"))
 
 from data_loader import prepare_data, LOOKBACK, inverse_scale
 from models import NaiveBaseline, build_lstm, train_lstm
@@ -170,7 +172,7 @@ def main() -> None:
         save=True,
     )
 
-    print("Pipeline complete.  Plots saved to:  electricity_forecasting/plots/")
+    print("Pipeline complete.  Plots saved to:  plots/")
     print("  - plots/training_loss.png")
     print("  - plots/forecast_comparison.png")
     print("  - plots/future_forecast.png  <-- NEW: 7-day out-of-sample forecast\n")

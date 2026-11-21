@@ -14,9 +14,9 @@ Key responsibilities:
     6. Generate sliding-window sequences for LSTM input.
 
 Supported local files (checked in priority order):
-    data/hourlyLoadDataIndia.xlsx  ? Indian national hourly demand (2019-2024)
-    data/electricity.csv           ? AEP / any hourly MW CSV
-    data/<any>.xlsx or <any>.csv   ? generic fallback scan
+    data/hourlyLoadDataIndia.csv   → Indian national hourly demand (2019-2024, fast)
+    data/electricity.csv           → AEP / any hourly MW CSV
+    data/<any>.csv or <any>.xlsx   → generic fallback scan
 
 Column auto-detection rules:
     Datetime  -> column whose name contains "datetime", "date", or "time"
@@ -182,9 +182,9 @@ def load_raw_data() -> pd.DataFrame:
     raise FileNotFoundError(
         "\n[ERROR] No dataset found.\n"
         "Please do ONE of the following:\n"
-        "  Option A - Place your file in:  electricity_forecasting/data/\n"
+        "  Option A - Place your file in:  data/\n"
         "             Supported formats: .csv, .xlsx, .xls\n"
-        "             Recommended: data/hourlyLoadDataIndia.xlsx  (already supported)\n"
+        "             Recommended: data/hourlyLoadDataIndia.csv  (already supported)\n"
         "  Option B - Install kagglehub and set your Kaggle API credentials:\n"
         "             pip install kagglehub\n"
         "             $env:KAGGLE_USERNAME = 'your_username'   # PowerShell\n"

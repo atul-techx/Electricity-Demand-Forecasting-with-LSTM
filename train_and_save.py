@@ -14,13 +14,15 @@ import joblib
 import numpy as np
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.environ.setdefault("KERAS_HOME", os.path.join(BASE_DIR, ".keras"))
+sys.path.insert(0, os.path.join(BASE_DIR, "src"))
 
 from data_loader import prepare_data, LOOKBACK
 from models import NaiveBaseline, build_lstm, train_lstm
 from evaluate import inverse_scale_predictions, evaluate_all
 
-MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(MODELS_DIR, "saved_lstm_model.keras")
 SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")

@@ -5,11 +5,12 @@ __pycache__/
 *.so
 .Python
 
-# Environments
+# Environments & Caches
 .venv/
 venv/
 ENV/
 env/
+.keras/
 
 # IDE / OS
 .vscode/
